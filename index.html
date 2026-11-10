@@ -53,6 +53,29 @@
     background: var(--accent); color: var(--accent-text); text-decoration: none; font-weight: 600; }
   footer { color: var(--muted); font-size: 12px; margin-top: 28px; }
   footer a { color: inherit; }
+  .ghost { display: inline-block; font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; text-decoration: none; }
+  .ghost:hover { border-color: var(--accent); }
+  .guide { margin-top: 20px; }
+  .guide h2 { font-size: 20px; margin: 0 0 4px; }
+  .guide > p { color: var(--muted); margin: 0 0 14px; }
+  details { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); margin-bottom: 10px; }
+  summary { cursor: pointer; padding: 14px 16px; font-weight: 600; list-style: none; display: flex; gap: 12px; align-items: baseline; }
+  summary::-webkit-details-marker { display: none; }
+  summary .n { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-text);
+    font-size: 13px; display: inline-flex; align-items: center; justify-content: center; }
+  summary::after { content: "+"; margin-left: auto; color: var(--muted); font-weight: 400; }
+  details[open] summary::after { content: "\2212"; }
+  details .body { padding: 0 16px 16px 52px; }
+  details .body p, details .body li { margin: 6px 0; }
+  details .body ol, details .body ul { padding-left: 18px; margin: 6px 0; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0; }
+  .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  .note { border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--drop); border-radius: 0 8px 8px 0; font-size: 14px; margin: 10px 0; }
+  .warn { border-left-color: #d08a2b; }
+  kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; background: var(--bg); }
+  @media (max-width: 720px) { details .body { padding-left: 16px; } }
 </style>
 </head>
 <body>
@@ -78,10 +101,10 @@
 
       <label class="h">Bit depth</label>
       <div class="seg">
-        <input type="radio" name="bits" id="b8" value="8" checked><label for="b8">8-bit</label>
-        <input type="radio" name="bits" id="b16" value="16"><label for="b16">16-bit</label>
+        <input type="radio" name="bits" id="b8" value="8"><label for="b8">8-bit</label>
+        <input type="radio" name="bits" id="b16" value="16" checked><label for="b16">16-bit</label>
       </div>
-      <div class="hint">16-bit gives 65,536 height steps instead of 256, so smoother carves where your software supports it.</div>
+      <div class="hint">16-bit gives 65,536 height steps instead of 256. Use it for laser jobs over 256 passes (LightBurn 2.1+). Pick 8-bit only for older software.</div>
 
       <label class="h">Background</label>
       <div class="seg">
@@ -99,6 +122,11 @@
         <span class="hint">or click to choose a file. Binary and ASCII STL both work.</span>
         <input type="file" id="file" accept=".stl,model/stl,application/sla">
       </div>
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap">
+        <span class="hint" style="margin:0">No model yet? Try the built-in 40 mm star medallion.</span>
+        <span><button type="button" class="ghost" id="sample">Try sample</button>
+        <a class="ghost" id="sample-dl" href="#" download="star-medallion-40mm.stl">Download sample STL</a></span>
+      </div>
       <div id="bar"><div></div></div>
       <div id="status"></div>
       <div class="out" id="out">
@@ -108,16 +136,118 @@
     </div>
   </div>
 
-  <div class="panel" style="margin-top:20px">
-    <label class="h">Using it with LightBurn (fiber / galvo, 3D Sliced mode)</label>
-    <ol style="margin:0;padding-left:20px">
-      <li>Model the part in mm and export STL. The PNG carries its real size, so it imports into LightBurn at the model's width and height.</li>
-      <li>Leave Invert off. LightBurn engraves dark areas deepest and skips pure white, so the top of the model (white) stays untouched.</li>
-      <li>Pick 16-bit if you will run more than 256 passes (needs LightBurn 2.1 or newer).</li>
-      <li>In LightBurn: Import the PNG, open the layer's Cut Settings, set Image Mode to 3D Sliced, then set Number of Passes for the total depth. Check Preview before burning.</li>
-    </ol>
-    <div class="hint">3D Sliced is only offered for galvo lasers. See the <a href="https://docs.lightburnsoftware.com/latest/Guides/3DSlicedImage/" style="color:inherit">LightBurn 3D Sliced guide</a>.</div>
-  </div>
+  <section class="guide" id="guide">
+    <h2>Beginner guide: your first 3D engraving on a fiber laser</h2>
+    <p>Written for galvo fiber lasers running LightBurn (for example a ComMarker B6 MOPA). Open each step in order.</p>
+
+    <details open>
+      <summary><span class="n">1</span>How depth engraving works, in one minute</summary>
+      <div class="body">
+        <p>A <b>depth map</b> is a black-and-white picture where brightness means height. LightBurn's <b>3D Sliced</b> mode burns the picture many times in thin layers. Each pass removes a little metal, and darker pixels get burned in more passes, so they end up deeper.</p>
+        <ul>
+          <li><b>White</b> = not engraved (the top surface of your design)</li>
+          <li><b>Black</b> = engraved the deepest</li>
+          <li><b>Grays</b> = everything in between</li>
+        </ul>
+        <p>This page makes that picture from a 3D model (STL file). The top of the model becomes white, so it stays as the polished surface and everything around it gets carved down.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="n">2</span>Get a 3D model</summary>
+      <div class="body">
+        <p><b>Fastest start:</b> press <b>Try sample</b> above. It's a 40 mm star medallion made for a first test.</p>
+        <p><b>Free models:</b> search <a href="https://www.printables.com/search/models?q=bas%20relief" style="color:inherit">Printables</a> or <a href="https://www.thingiverse.com/search?q=bas+relief" style="color:inherit">Thingiverse</a> for <i>bas relief</i>, <i>coin</i>, <i>medallion</i>, <i>relief</i> or <i>emblem</i>. Flat-backed reliefs work best. A full 3D figure also works, but only the side you choose (Top, Front or Side) gets carved.</p>
+        <p><b>Make your own:</b> Tinkercad (free, in the browser) is enough. Build it in <b>millimeters</b> and export STL.</p>
+        <div class="note">Size matters. This page reads STL numbers as millimeters, so a model 40 wide comes out 40 mm wide in LightBurn. If yours comes out tiny or huge, it was modeled in other units. Rescale it in LightBurn with the lock on so it doesn't stretch.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="n">3</span>Make the depth map on this page</summary>
+      <div class="body">
+        <ol>
+          <li>Drop the STL in the box above, or press <b>Try sample</b>.</li>
+          <li><b>View:</b> Top for most reliefs and coins. If your model looks wrong, try Front or Side.</li>
+          <li><b>Bit depth: 16-bit</b> (already selected). LightBurn 2.1 or newer reads it, and it keeps the depth smooth when you run hundreds of passes.</li>
+          <li><b>Resolution:</b> about 40 pixels per mm of part is a good match for fine laser settings. A 40 mm part needs about <b>1600</b>, and a 25 mm part about <b>1000</b>. Bigger isn't better past that, it only slows LightBurn down.</li>
+          <li><b>Background:</b> <i>Carve away</i> sinks everything around the model so it stands up in relief, like a coin. <i>Leave</i> keeps the surrounding metal and engraves only the model's shape, which is faster.</li>
+          <li><b>Invert:</b> leave it off.</li>
+          <li>Press <b>Download</b> and save the PNG.</li>
+        </ol>
+        <div class="note">Check the preview: the high parts of your model should be the brightest. If the design looks like a photo negative, the model is upside down. Try another View, or turn on Invert.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="n">4</span>Set it up in LightBurn</summary>
+      <div class="body">
+        <ol>
+          <li><b>File &gt; Import</b> (or drag the PNG onto the work area). It comes in at the model's real size.</li>
+          <li>Move it to where your part sits. Use the red-light preview (<b>Frame</b>) to check the position on the actual metal.</li>
+          <li>Double-click the layer to open <b>Cut Settings</b>. Set <b>Mode</b> to <b>Image</b>, then set <b>Image Mode</b> to <b>3D Sliced</b>.</li>
+          <li>Set <b>Number of Passes</b>. More passes cut deeper and smoother but take longer. See the starting numbers in step 5.</li>
+          <li>Turn on <b>Enable cleanup pass</b>. It runs a light pass every so often (<b>Clean after # of passes</b>) to clear the burnt crust, which keeps the depth even.</li>
+          <li>Open <b>Preview</b> and turn on <b>Show traversal moves</b>. The red areas should grow larger with each pass. If they do, the depth map is the right way around.</li>
+        </ol>
+        <div class="note">3D Sliced shows up only for galvo lasers like fiber machines. If you can't find it, check that LightBurn knows your machine is a galvo, and that you have LightBurn 2.1 or newer.</div>
+        <div class="note">Have LightBurn 2.2 or newer? It can import an STL directly (<b>File &gt; Import</b> the .stl) and build the depth map itself. This page is still handy: it works with older versions, previews quickly in the browser, and gives you a PNG you can reuse and share.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="n">5</span>Starting settings for a 60W MOPA (test first)</summary>
+      <div class="body">
+        <p>ComMarker publishes a LightBurn 3D Slice example for its <b>B6 60W MOPA</b> on a brass coin. Use these numbers as a starting point, not as gospel:</p>
+        <table class="tbl">
+          <tr><th></th><th>Engrave pass</th><th>Cleanup pass</th></tr>
+          <tr><td>Power</td><td>90%</td><td>30%</td></tr>
+          <tr><td>Speed</td><td>2000 mm/s</td><td>6000 mm/s</td></tr>
+          <tr><td>Frequency</td><td>100 kHz</td><td>75 kHz</td></tr>
+          <tr><td>Number of Passes</td><td>512</td><td>&nbsp;</td></tr>
+          <tr><td>Line Interval</td><td>0.025 mm</td><td>&nbsp;</td></tr>
+          <tr><td>Hatch angle</td><td>45&deg; (in LightBurn: Angle Increment)</td><td>&nbsp;</td></tr>
+        </table>
+        <p class="hint">Source: <a href="https://commarker.com/?p=49730" style="color:inherit">ComMarker B6 MOPA 3D relief examples</a>. Different language versions of that page list slightly different cleanup timing, which is another reason to test.</p>
+        <ul>
+          <li><b>Do a small test first.</b> Scale the design down to about 15 mm and drop to around 100 passes. A few minutes on scrap tells you more than an hour of guessing.</li>
+          <li><b>Too shallow?</b> Add passes. That's the main depth control.</li>
+          <li><b>Rough or burnt?</b> Turn the cleanup pass on, or run it more often.</li>
+          <li><b>Steps or terraces in curves?</b> Use 16-bit and more passes.</li>
+          <li>LightBurn's <b>Material Test</b> (under <i>Laser Tools</i>) can burn a grid where each square uses a different power or speed. It's the quickest way to dial in a new metal.</li>
+        </ul>
+        <div class="note warn">Depth jobs with hundreds of passes can run 30 minutes to a few hours, and the metal gets hot. Never leave the laser running unattended.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="n">6</span>Safety basics for fiber lasers</summary>
+      <div class="body">
+        <ul>
+          <li><b>Eyes:</b> the beam is invisible infrared (about 1064 nm). Always wear the goggles rated for that wavelength, including when you're just watching. Regular sunglasses do nothing.</li>
+          <li><b>Fumes:</b> run a fume extractor or vent outdoors. Metal vapor and coatings are bad to breathe.</li>
+          <li><b>Materials:</b> never laser PVC or vinyl (they release chlorine gas). If you don't know what a plastic is, don't laser it.</li>
+          <li><b>Heat:</b> deep jobs make the part hot. Let it cool, or use pliers.</li>
+          <li><b>Fire:</b> keep the area clear, and keep an extinguisher nearby.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="n">?</span>Words you'll see</summary>
+      <div class="body">
+        <table class="tbl">
+          <tr><td><b>Galvo</b></td><td>The laser steers the beam with fast-moving mirrors instead of moving the head. All fiber markers work this way.</td></tr>
+          <tr><td><b>MOPA</b></td><td>A fiber laser that lets you change the pulse length (Q-Pulse Width). That gives finer control, and colors on stainless steel.</td></tr>
+          <tr><td><b>Passes</b></td><td>How many times the laser repeats the job. In 3D Sliced mode, each pass is one depth layer.</td></tr>
+          <tr><td><b>Line Interval</b></td><td>The gap between scan lines. Smaller is finer and slower. 0.025 mm is about 1000 DPI.</td></tr>
+          <tr><td><b>Frequency</b></td><td>How many laser pulses fire per second (kHz).</td></tr>
+          <tr><td><b>Cleanup pass</b></td><td>A light, fast pass that clears burnt residue between deep passes.</td></tr>
+          <tr><td><b>16-bit</b></td><td>Image with 65,536 gray levels instead of 256. Smoother depth for jobs over 256 passes.</td></tr>
+        </table>
+      </div>
+    </details>
+  </section>
 
   <footer>MIT licensed. <a href="https://github.com/workmanl/stl-heightmap">Source on GitHub</a>.</footer>
 </main>
@@ -164,6 +294,7 @@
       const f = (n) => n.toFixed(2);
       setStatus(m.triangles.toLocaleString() + " triangles, " + m.width + " x " + m.height + " px, model " +
         f(m.size.u) + " x " + f(m.size.v) + " x " + f(m.size.h) + " mm (assuming mm), " +
+        ((m.width - 1) / Math.max(m.size.u, 1e-9)).toFixed(1) + " px/mm, " +
         ((performance.now() - t0) / 1000).toFixed(1) + " s");
       worker.terminate(); worker = null;
     };
@@ -171,6 +302,55 @@
   }
 
   function take(file) { if (file) { lastFile = file; run(); } }
+
+  // Built-in sample: a 40 mm medallion with a rim, a gentle dome and a raised five-point star.
+  function sampleHeight(x, y) {
+    const r = Math.hypot(x, y);
+    if (r > 20) return null;
+    const ramp = (d, w) => Math.max(0, Math.min(1, d / w)); // soft edge, w mm wide
+    let h = 1.0 + 0.6 * (1 - (r / 20) ** 2);                // base plate + dome
+    h += 1.2 * ramp(r - 17.6, 0.4) * ramp(19.4 - r, 0.4);    // raised rim
+    const d = starDist(x, y);                                  // mm inside the star outline
+    h += 0.5 * ramp(d + 0.25, 0.5) + 0.7 * ramp(d, 2.2);      // raised star: short wall, then bevel
+    return h;
+  }
+  // Straight-edged five-point star, one point up. Returns + inside, - outside (mm to nearest edge).
+  const STAR = Array.from({ length: 10 }, (_, k) => {
+    const a = Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? 4.8 : 12;
+    return [rr * Math.cos(a), rr * Math.sin(a)];
+  });
+  function starDist(x, y) {
+    let inside = false, best = Infinity;
+    for (let i = 0, j = STAR.length - 1; i < STAR.length; j = i++) {
+      const [xi, yi] = STAR[i], [xj, yj] = STAR[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+      const dx = xj - xi, dy = yj - yi;
+      const t = Math.max(0, Math.min(1, ((x - xi) * dx + (y - yi) * dy) / (dx * dx + dy * dy)));
+      best = Math.min(best, Math.hypot(x - xi - t * dx, y - yi - t * dy));
+    }
+    return inside ? best : -best;
+  }
+  function makeSampleSTL() {
+    const N = 200, step = 40 / N, tris = [];
+    const H = [];
+    for (let j = 0; j <= N; j++) {
+      H.push([]);
+      for (let i = 0; i <= N; i++) H[j].push(sampleHeight(-20 + i * step, -20 + j * step));
+    }
+    const P = (i, j) => [-20 + i * step + 20, -20 + j * step + 20, H[j][i]];
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      if (H[j][i] == null || H[j][i + 1] == null || H[j + 1][i] == null || H[j + 1][i + 1] == null) continue;
+      tris.push([P(i, j), P(i + 1, j), P(i + 1, j + 1)], [P(i, j), P(i + 1, j + 1), P(i, j + 1)]);
+    }
+    const buf = new ArrayBuffer(84 + tris.length * 50), dv = new DataView(buf);
+    dv.setUint32(80, tris.length, true);
+    tris.forEach((t, k) => t.flat().forEach((v, m) => dv.setFloat32(84 + k * 50 + 12 + m * 4, v, true)));
+    return buf;
+  }
+  let sampleFile = null;
+  const getSample = () => sampleFile || (sampleFile = new File([makeSampleSTL()], "star-medallion-40mm.stl", { type: "model/stl" }));
+  $("sample").addEventListener("click", () => { $("res").value = 1600; take(getSample()); });
+  $("sample-dl").addEventListener("click", (e) => { e.currentTarget.href = URL.createObjectURL(getSample()); });
   drop.addEventListener("click", () => fileInput.click());
   drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
   fileInput.addEventListener("change", () => take(fileInput.files[0]));

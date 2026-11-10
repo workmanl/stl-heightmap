@@ -9,9 +9,14 @@ Everything runs in your browser. Nothing is uploaded.
 
 ## Features
 
+- Step-by-step beginner guide on the page: depth maps explained, finding models,
+  LightBurn 3D Sliced setup, starting settings for a 60W MOPA fiber laser,
+  safety and a glossary
+- Built-in 40 mm star medallion sample so a first test needs no modeling
+
 - Binary and ASCII STL
 - Top, Front or Side view
-- 8-bit or 16-bit grayscale PNG (16-bit for more than 256 passes)
+- 16-bit (default) or 8-bit grayscale PNG; 16-bit for more than 256 passes
 - Real-size output: the PNG stores its pixels per mm, so it imports into
   LightBurn at the model's actual width and height (STL units assumed to be mm)
 - Background carved away (black) or left untouched (white)
@@ -26,6 +31,9 @@ Everything runs in your browser. Nothing is uploaded.
 3. Choose 16-bit if you will run more than 256 passes (LightBurn 2.1+).
 4. In LightBurn, import the PNG, set the layer's Image Mode to **3D Sliced**,
    and set Number of Passes for the total depth. Check Preview before burning.
+
+LightBurn 2.2 and newer can also import STL directly. This tool still helps with
+older versions, quick browser previews, and reusable PNGs.
 
 See the [LightBurn 3D Sliced guide](https://docs.lightburnsoftware.com/latest/Guides/3DSlicedImage/).
 
